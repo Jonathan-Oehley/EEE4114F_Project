@@ -1,86 +1,99 @@
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import sys
-import time
-import numpy as np
 import csv
+import numpy as np
+import pyqtgraph as pg
+import pyqtgraph.opengl as gl
+from PyQt4 import QtGui, QtCore
+import cv2
 
-x_dir = 1 # Leap x-axis
-y_dir = -1 # Leap z-axis
+def getPos(line, x=0, y=1, z=2):
+    pos = np.zeros([6, 3], dtype=np.float32)
+    pos[0,:] = [x_dir * float(line[2 + x]), y_dir * float(line[2 + y]), z_dir * float(line[2 + z])] # Palm
+    pos[1,:] = [x_dir * float(line[5 + x]), y_dir * float(line[5 + y]), z_dir * float(line[5 + z])] # Thumb
+    pos[2, :] = [x_dir * float(line[8 + x]), y_dir * float(line[8 + y]), z_dir * float(line[8 + z])]  # Index
+    pos[3, :] = [x_dir * float(line[11 + x]), y_dir * float(line[11 + y]), z_dir * float(line[11 + z])]  # Middle
+    pos[4, :] = [x_dir * float(line[14 + x]), y_dir * float(line[14 + y]), z_dir * float(line[14 + z])]  # Ring
+    pos[5, :] = [x_dir * float(line[17 + x]), y_dir * float(line[17 + y]), z_dir * float(line[17 + z])]  # Pinky
+    return pos
+
+def getLines(line, x=0, y=1, z=2):
+    pos = getPos(line, x=x, y=y, z=z)
+    lines = np.zeros([10, 3], dtype=np.float32)
+    lines[0:11:2,:] = pos[0,:] # Palm base for each finger
+    lines[1,:] = pos[1,:] # Thumb
+    lines[3, :] = pos[2, :]  # Index
+    lines[5, :] = pos[3, :]  # Middle
+    lines[7, :] = pos[4, :]  # Ring
+    lines[9, :] = pos[5, :]  # Pinky
+    return lines
+
+def update():
+    global currentLine, points, currentLine
+    if currentLine < len(dataFile):
+        points.setData(pos=getPos(dataFile[currentLine], x=0, y=2, z=1))
+        lines.setData(pos=getLines(dataFile[currentLine], x=0, y=2, z=1))
+        leftImage.setImage(cv2.imread("../DataGathering/Images/" + str(dataFile[currentLine][0]) + "_0.jpg", cv2.IMREAD_GRAYSCALE).T)
+        #rightImage.setImage(cv2.imread("testImage.jpg", cv2.IMREAD_GRAYSCALE).T)
+        currentLine += 1
+    else:
+        print("Done")
+        sys.exit(0)
+
+headings = []
+dataFile = []
+currentLine = 0
+
+# Read in all the data
+with open("testData.csv", "r") as file:
+    reader = csv.reader(file)
+    for i, line in enumerate(reader):
+        if (i == 0):
+            headings.append(line)
+        else:
+            dataFile.append(line)
+file.close()
+
+x_dir = -1 # Leap x-axis
+y_dir = 1 # Leap z-axis
 z_dir = 1 # Leap y-axis
 
-t_1 = 0
+app = QtGui.QApplication([])
+window = QtGui.QWidget()
+window.showMaximized()
 
-def plotPalm(ax, line, x, y, z):
-    start = 2
-    ax.scatter(x_dir * float(line[start + x]), y_dir * float(line[start + y]), z_dir * float(line[start + z]))
+layout = QtGui.QGridLayout()
+window.setLayout(layout)
 
-def plotThumb(ax, line, x, y, z):
-    start = 5
-    ax.scatter(x_dir * float(line[start + x]), y_dir * float(line[start + y]), z_dir * float(line[start + z]))
-    ax.plot([x_dir * float(line[2]), x_dir * float(line[start + x])], [y_dir * float(line[4]), y_dir * float(line[start + y])], [z_dir * float(line[3]), z_dir * float(line[start + z])])
+viewer = gl.GLViewWidget()
+viewer.setCameraPosition(distance=2000, azimuth=90)
+viewer.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+layout.addWidget(viewer, 0, 0, 1, 2)
 
-def plotIndex(ax, line, x, y, z):
-    start = 8
-    ax.scatter(x_dir * float(line[start + x]), y_dir * float(line[start + y]), z_dir * float(line[start + z]))
-    ax.plot([x_dir * float(line[2]), x_dir * float(line[start + x])], [y_dir * float(line[4]), y_dir * float(line[start + y])], [z_dir * float(line[3]), z_dir * float(line[start + z])])
+g = gl.GLGridItem()
+g.scale(50, 50, 1)
+viewer.addItem(g)
 
-def plotMiddle(ax, line, x, y, z):
-    start = 11
-    ax.scatter(x_dir * float(line[start + x]), y_dir * float(line[start + y]), z_dir * float(line[start + z]))
-    ax.plot([x_dir * float(line[2]), x_dir * float(line[start + x])], [y_dir * float(line[4]), y_dir * float(line[start + y])], [z_dir * float(line[3]), z_dir * float(line[start + z])])
+points = gl.GLScatterPlotItem(pos=np.zeros([6, 3], dtype=np.float32))
+lines = gl.GLLinePlotItem(pos=np.zeros([10, 3], dtype=np.float32))
+viewer.addItem(points)
+viewer.addItem(lines)
 
-def plotRing(ax, line, x, y, z):
-    start = 14
-    ax.scatter(x_dir * float(line[start + x]), y_dir * float(line[start + y]), z_dir * float(line[start + z]))
-    ax.plot([x_dir * float(line[2]), x_dir * float(line[start + x])], [y_dir * float(line[4]), y_dir * float(line[start + y])], [z_dir * float(line[3]), z_dir * float(line[start + z])])
+leftImage = pg.ImageView()
+leftImage.ui.histogram.hide()
+leftImage.ui.roiBtn.hide()
+leftImage.ui.menuBtn.hide()
+layout.addWidget(leftImage, 2, 0)
 
-def plotPinky(ax, line, x, y, z):
-    start = 17
-    ax.scatter(x_dir * float(line[start + x]), y_dir * float(line[start + y]), z_dir * float(line[start + z]))
-    ax.plot([x_dir * float(line[2]), x_dir * float(line[start + x])], [y_dir * float(line[4]), y_dir * float(line[start + y])], [z_dir * float(line[3]), z_dir * float(line[start + z])])
+rightImage = pg.ImageView()
+rightImage.ui.histogram.hide()
+rightImage.ui.roiBtn.hide()
+rightImage.ui.menuBtn.hide()
+layout.addWidget(rightImage, 2, 1)
 
-def plotHand(ax, line, x=0, y=1, z=2):
-    plotPalm(ax, line, x, y, z)
-    plotThumb(ax, line, x, y, z)
-    plotIndex(ax, line, x, y, z)
-    plotMiddle(ax, line, x, y, z)
-    plotRing(ax, line, x, y, z)
-    plotPinky(ax, line, x, y, z)
+timer = QtCore.QTimer()
+timer.timeout.connect(update)
+timer.start(10)
 
-def handle_figure_close(evt):
-    sys.exit(0)
-
-def main():
-    fig = plt.figure()
-    fig.canvas.mpl_connect('close_event', handle_figure_close)
-    plt.ion()
-    ax = Axes3D(fig)
-
-    t_1 = time.time()
-
-    try:
-        with open("testData.csv", "r") as file:
-            reader = csv.reader(file)
-            for i, line in enumerate(reader):
-                if (i != 0): # Ignore headings
-                    ax.clear()
-                    ax.set_xlim3d(-300, 300) # Leap x-axis
-                    ax.set_ylim3d(-300, 300) # Leap z-axis
-                    ax.set_zlim3d(0, 300)    # Leap y-axis
-                    ax.set_xlabel("x-axis (left/right)")
-                    ax.set_ylabel("z-axis (fwd/back)")
-                    ax.set_zlabel("y-axit (up/down)")
-                    plt.autoscale(False)
-
-                    plotHand(ax, line, 0, 2, 1) # Swapping y- and z-axes to convert Leap axes to matplotlib axes
-                    print("Interval: " + str(time.time() - t_1))
-                    t_1 = time.time()
-                    plt.pause(0.001)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        file.close()
 
 if __name__ == "__main__":
-    main()
+    app.exec_()
