@@ -32,8 +32,8 @@ def update():
     if currentLine < len(dataFile):
         points.setData(pos=getPos(dataFile[currentLine], x=0, y=2, z=1))
         lines.setData(pos=getLines(dataFile[currentLine], x=0, y=2, z=1))
-        leftImage.setImage(cv2.imread("../DataGathering/Images/" + str(dataFile[currentLine][0]) + "_0.jpg", cv2.IMREAD_GRAYSCALE).T)
-        #rightImage.setImage(cv2.imread("testImage.jpg", cv2.IMREAD_GRAYSCALE).T)
+        #leftImage.setImage(cv2.imread("../DataGathering/Images/" + str(dataFile[currentLine][0]) + "_0.jpg", cv2.IMREAD_GRAYSCALE).T)
+        # rightImage.setImage(cv2.imread("testImage.jpg", cv2.IMREAD_GRAYSCALE).T)
         currentLine += 1
     else:
         print("Done")
