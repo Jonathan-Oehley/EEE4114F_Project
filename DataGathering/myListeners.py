@@ -13,8 +13,15 @@ class listenForFrame(Leap.Listener):
         controller.set_policy(controller.POLICY_IMAGES)
 
         # Remove previous images
-        os.system("rm -rf " + os.path.join(os.getcwd(), "Images").replace(" ", "\ "))
-        os.mkdir(os.path.join(os.getcwd(), "Images"))
+        # Mac definition
+        '''
+        if os.name == 'posix':
+            os.system("rm -rf " + os.path.join(os.getcwd(), "Images").replace(" ", "\ "))
+            os.mkdir(os.path.join(os.getcwd(), "Images"))
+        elif os.name == 'nt':
+            os.system("rd /s /q " + os.path.join(os.getcwd(), "Images").replace(" ", "\ "))
+            os.mkdir(os.path.join(os.getcwd(), "Images"))
+        '''
 
         # Write the required headings to the CSV file
         headings = ['FrameID', 'Right', 'PalmX', 'PalmY', 'PalmZ', 'ThumbX', 'ThumbY', 'ThumbZ', 'IndexX', 'IndexY', 'IndexZ', 'MiddleX', 'MiddleY', 'MiddleZ', 'RingX', 'RingY', 'RingZ', 'PinkyX', 'PinkyY', 'PinkyZ']
