@@ -1,0 +1,1 @@
+This python program connects to the Leap Motion Controller, and collects each frame as the Leap Motion API produces them. The pairs of images are named according to FrameID, and saved to file. The labels csv is generated at the same time, which records the coordinates of the points of interest (Leap Motion coordinated are assumed to be ground truth).

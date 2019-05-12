@@ -1,0 +1,1 @@
+This visualiser script was used when gathering data to check that the labels were recorded corretly. It can be adapted later to serve as a real-time prediction script, comparing the neural network's estimations to the actual positions in real-time.
